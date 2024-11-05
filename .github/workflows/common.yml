@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  workflow_call:
+
+concurrency: # Cancel stale PR builds (but not push builds)
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - os: linux
+            cpu: amd64
+            platform: x64
+            builder: ubuntu-latest
+          - os: linux-gcc-14 # This is to use ubuntu 24 and install gcc 14. Should be removed when ubuntu-latest is 26.04
+            cpu: amd64
+            platform: x64
+            builder: ubuntu-24.04
+          - os: macos
+            cpu: amd64
+            platform: x64
+            builder: macos-13
+          - os: windows
+            cpu: amd64
+            platform: x64
+            builder: windows-latest
+          - os: linux
+            cpu: i386
+            platform: x86
+            builder: ubuntu-latest
+          - os: macos
+            cpu: arm64
+            platform: arm64
+            builder: macos-latest
+        branch: [version-2-0, version-2-2, devel]
+    defaults:
+      run:
+        shell: bash
+
+    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }} (Nim ${{ matrix.branch }})'
+    runs-on: ${{ matrix.target.builder }}
+    continue-on-error: ${{ matrix.branch == 'devel' }}
+
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies (Linux i386)
+        if: runner.os == 'Linux' && matrix.target.cpu == 'i386'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-fast update -qq
+          sudo DEBIAN_FRONTEND='noninteractive' apt-fast install \
+            --no-install-recommends -yq gcc-multilib g++-multilib \
+            libssl-dev:i386 libpcre3-dev:i386
+          mkdir -p external/bin
+          cat << EOF > external/bin/gcc
+          #!/bin/bash
+          exec $(which gcc) -m32 -mno-adx "\$@"
+          EOF
+          cat << EOF > external/bin/g++
+          #!/bin/bash
+          exec $(which g++) -m32 -mno-adx "\$@"
+          EOF
+          chmod 755 external/bin/gcc external/bin/g++
+          echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
+
+      - name: Use gcc 14
+        # Should be removed when ubuntu-latest is 26.04
+        if: ${{ matrix.target.os == 'linux-gcc-14' }}
+        run: |
+          # Add GCC-14 to alternatives
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
+          # Set GCC-14 as the default
+          sudo update-alternatives --set gcc /usr/bin/gcc-14
+
+
+
+      - name: MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          path-type: inherit
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-toolchain
+
+      - name: Restore Nim DLLs dependencies (Windows) from cache
+        if: runner.os == 'Windows'
+        id: windows-dlls-cache
+        uses: actions/cache@v4
+        with:
+          path: external/dlls-${{ matrix.target.cpu }}
+          key: 'dlls-${{ matrix.target.cpu }}'
+
+      - name: Install DLLs dependencies (Windows)
+        if: >
+          runner.os == 'Windows' &&
+          steps.windows-dlls-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p external
+          curl -L "https://nim-lang.org/download/windeps.zip" -o external/windeps.zip
+          7z x -y external/windeps.zip -oexternal/dlls-${{ matrix.target.cpu }}
+
+      - name: Path to cached dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "${{ github.workspace }}/external/dlls-${{ matrix.target.cpu }}" >> $GITHUB_PATH
+
+
+
+      - name: Pick a correct `make`
+        run: |
+          MAKE_CMD="make"
+          if [[ "${{ matrix.target.os }}" == "windows" ]]; then
+            MAKE_CMD="mingw32-make"
+          fi
+          echo "MAKE_CMD=${MAKE_CMD}" >> $GITHUB_ENV
+
+
+
+      - name: Build Nim and Nimble
+        run: |
+          curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
+          env MAKE="${MAKE_CMD} -j4" ARCH_OVERRIDE=${{ matrix.target.platform }} NIM_COMMIT=${{ matrix.branch }} \
+            QUICK_AND_DIRTY_COMPILER=1 QUICK_AND_DIRTY_NIMBLE=1 CC=gcc \
+            bash build_nim.sh nim csources dist/nimble NimBinaries
+          echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+
+      - name: Run tests
+        run: |
+          nim --version
+          nimble --version
+          gcc --version
+          nimble install -y --depsOnly
+          nimble test
