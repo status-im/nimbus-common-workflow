@@ -1,0 +1,26 @@
+target:
+  - os: linux
+    cpu: amd64
+    platform: x64
+    builder: ubuntu-latest
+  - os: linux-gcc-14 # This is to use ubuntu 24 and install gcc 14. Should be removed when ubuntu-latest is 26.04
+    cpu: amd64
+    platform: x64
+    builder: ubuntu-24.04
+  - os: macos
+    cpu: amd64
+    platform: x64
+    builder: macos-13
+  - os: windows
+    cpu: amd64
+    platform: x64
+    builder: windows-latest
+  - os: linux
+    cpu: i386
+    platform: x86
+    builder: ubuntu-latest
+  - os: macos
+    cpu: arm64
+    platform: arm64
+    builder: macos-latest
+branch: [version-2-0, version-2-2, devel]

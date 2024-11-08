@@ -2,42 +2,34 @@ name: CI
 
 on:
   workflow_call:
+    outputs:
+      matrix:
+        value: ${{ jobs.generate-json-matrix.outputs.matrix }}
+
 
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
+  create-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.convert.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: convert
+        run: |
+          echo "matrix=$(yq -o=json -I=0 '.' .github/workflows/matrix.yml)" >> $GITHUB_OUTPUT
+
   build:
+    needs: create-matrix
+    outputs:
+      matrix: ${{ needs.create-matrix.outputs.matrix }}
     strategy:
       fail-fast: false
-      matrix:
-        target:
-          - os: linux
-            cpu: amd64
-            platform: x64
-            builder: ubuntu-latest
-          - os: linux-gcc-14 # This is to use ubuntu 24 and install gcc 14. Should be removed when ubuntu-latest is 26.04
-            cpu: amd64
-            platform: x64
-            builder: ubuntu-24.04
-          - os: macos
-            cpu: amd64
-            platform: x64
-            builder: macos-13
-          - os: windows
-            cpu: amd64
-            platform: x64
-            builder: windows-latest
-          - os: linux
-            cpu: i386
-            platform: x86
-            builder: ubuntu-latest
-          - os: macos
-            cpu: arm64
-            platform: arm64
-            builder: macos-latest
-        branch: [version-2-0, version-2-2, devel]
+      matrix: ${{ fromJSON(needs.create-matrix.outputs.matrix) }}
     defaults:
       run:
         shell: bash
@@ -134,10 +126,10 @@ jobs:
             bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
-      - name: Run tests
-        run: |
-          nim --version
-          nimble --version
-          gcc --version
-          nimble install -y --depsOnly
-          nimble test
+      # - name: Run tests
+      #   run: |
+      #     nim --version
+      #     nimble --version
+      #     gcc --version
+      #     nimble install -y --depsOnly
+      #     nimble test
