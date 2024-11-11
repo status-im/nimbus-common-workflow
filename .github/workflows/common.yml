@@ -2,6 +2,12 @@ name: CI
 
 on:
   workflow_call:
+    inputs:
+      test-command:
+        description: 'Test command(s) that should be used to test a package'
+        default: 'nimble test'
+        required: false
+        type: string
 
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -140,4 +146,4 @@ jobs:
           nimble --version
           gcc --version
           nimble install -y --depsOnly
-          nimble test
+          ${{ inputs.test-command }}
