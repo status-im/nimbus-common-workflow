@@ -11,6 +11,8 @@ for testing:
 
 
 
+
+
 ## Usage
 
 To use this workflow, in the project's `.github/workflows/<name>.yml`you need
@@ -32,6 +34,8 @@ jobs:
 ```
 
 By default, it is assumed that your project uses `nimble test` for its testing.
+
+
 
 
 
@@ -81,4 +85,36 @@ jobs:
           nimble test
           nimble test_libbacktrace
           nimble examples
+```
+
+
+
+
+
+### Customizing the Nim versions used in testing
+
+By default, this workflow tests a package with the following Nim versions:
+- `version-1-6`
+- `version-2-0`
+- `version-2-2`
+- `devel`
+
+To test with a different set of Nim versions, specify them in
+`jobs.<name>.with.nim-versions` using the following syntax (make sure to include
+both outer single quotes and inner double quotes as in the example):
+
+```yaml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
+    with:
+      nim-versions: '["version-2-0", "version-2-2"]'
 ```

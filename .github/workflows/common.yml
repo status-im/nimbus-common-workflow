@@ -4,13 +4,13 @@ on:
   workflow_call:
     inputs:
       test-command:
-        description: 'Test command(s) that should be used to test a package'
+        description: 'Test command(s) which should be used to test a package'
         default: 'nimble test'
         required: false
         type: string
       nim-versions:
-        description: 'List of Nim versions that should be used for testing'
-        default: '["version-2-0", "version-2-2", "devel"]'
+        description: 'List of Nim versions which should be used for testing'
+        default: '["version-1-6", "version-2-0", "version-2-2", "devel"]'
         required: false
         type: string
 
