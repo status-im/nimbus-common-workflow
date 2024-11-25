@@ -8,6 +8,11 @@ on:
         default: 'nimble test'
         required: false
         type: string
+      nim-versions:
+        description: 'List of Nim versions that should be used for testing'
+        default: '["version-2-0", "version-2-2", "devel"]'
+        required: false
+        type: string
 
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -43,7 +48,7 @@ jobs:
             cpu: arm64
             platform: arm64
             builder: macos-latest
-        branch: [version-2-0, version-2-2, devel]
+        branch: ${{ fromJson(inputs.nim-versions) }}
     defaults:
       run:
         shell: bash
