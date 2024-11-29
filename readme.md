@@ -1,4 +1,5 @@
 # Common CI workflow
+[![GH action-nimbus-common-workflow](https://github.com/status-im/nimbus-common-workflow/actions/workflows/ci.yml/badge.svg)](https://github.com/status-im/nimbus-common-workflow/actions/workflows/ci.yml)
 
 This goal of this repo is to define a single Github workflow which will be used
 in multiple Status projects which share the same common steps required

@@ -1,0 +1,11 @@
+name: CI
+on:
+  push:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    uses: ./.github/workflows/common.yml
+    with:
+      test-command: |
+        nim c -r -d:release tests/tests
