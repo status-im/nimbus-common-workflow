@@ -13,6 +13,11 @@ on:
         default: '["version-1-6", "version-2-0", "version-2-2", "devel"]'
         required: false
         type: string
+      nimble-version:
+        description: 'NIMBLE_COMMIT to use when compiling nimble, defaults to the one shipped with nim'
+        default: ''
+        required: false
+        type: string
 
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -20,6 +25,8 @@ concurrency: # Cancel stale PR builds (but not push builds)
 
 jobs:
   build:
+    env:
+      NIMBLE_COMMIT: ${{ inputs.nimble-version }}
     strategy:
       fail-fast: false
       matrix:
