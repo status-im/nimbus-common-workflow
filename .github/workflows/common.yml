@@ -39,10 +39,6 @@ jobs:
             cpu: amd64
             platform: x64
             builder: ubuntu-24.04
-          - os: macos
-            cpu: amd64
-            platform: x64
-            builder: macos-13
           - os: windows
             cpu: amd64
             platform: x64
