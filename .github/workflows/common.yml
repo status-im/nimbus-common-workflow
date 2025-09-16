@@ -154,7 +154,6 @@ jobs:
         env:
           MAKE: make -j4
           ARCH_OVERRIDE: ${{ matrix.target.platform }}
-          PLATFORM: ${{ matrix.target.platform }}
           NIM_COMMIT: ${{ matrix.branch }}
           QUICK_AND_DIRTY_COMPILER: 1
           QUICK_AND_DIRTY_NIMBLE: 1
@@ -165,6 +164,8 @@ jobs:
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Run tests
+        env:
+          PLATFORM: ${{ matrix.target.platform }}
         run: |
           nim --version
           nimble --version
