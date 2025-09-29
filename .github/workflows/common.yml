@@ -170,7 +170,7 @@ jobs:
           if [[ '${{ runner.os }}' == 'Linux' ]]; then
             echo '/home/runner/.nimble/bin' >> $GITHUB_PATH
           elif [[ '${{ runner.os }}' == 'Windows' ]]; then
-            echo '/c/Users/runneradmin/.nimble/bin' >> $GITHUB_PATH
+            echo 'C:/Users/runneradmin/.nimble/bin' >> $GITHUB_PATH
           else
             echo '~/.nimble/bin' >> $GITHUB_PATH
           fi
