@@ -18,6 +18,10 @@ on:
         default: ''
         required: false
         type: string
+      nimble-bin-path:
+        description: 'Add .nimble/bin path to GITHUB_PATH'
+        required: false
+        default: false
 
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -158,6 +162,16 @@ jobs:
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
           bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+
+      - name: Restore EEST test vectors from cache
+        if: inputs.nimble-bin-path == 'true'
+          if [[ '${{ runner.os }}' == 'Linux' ]]; then
+            echo '/home/runner/.nimble/bin' >> $GITHUB_PATH
+          elif [[ '${{ runner.os }}' == 'Windows' ]]; then
+            echo '/c/Users/runneradmin/.nimble/bin' >> $GITHUB_PATH
+          else
+            echo '~/.nimble/bin' >> $GITHUB_PATH
+          fi
 
       - name: Run tests
         env:
