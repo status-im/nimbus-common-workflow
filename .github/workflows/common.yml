@@ -165,7 +165,7 @@ jobs:
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Add .nimble/bin path to GITHUB_PATH
-        if: inputs.nimble-bin-path == true
+        if: ${{ inputs.nimble-bin-path }}
         run: |
           if [[ '${{ runner.os }}' == 'Linux' ]]; then
             echo '/home/runner/.nimble/bin' >> $GITHUB_PATH
