@@ -53,6 +53,10 @@ jobs:
             platform: x86
             builder: ubuntu-latest
           - os: macos
+            cpu: amd64
+            platform: x64
+            builder: macos-15-intel
+          - os: macos
             cpu: arm64
             platform: arm64
             builder: macos-latest
