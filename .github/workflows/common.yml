@@ -165,7 +165,7 @@ jobs:
           CC: gcc
         run: |
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-          bash build_nim.sh nim csources dist/nimble NimBinaries
+          V=1 bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Add .nimble/bin path to GITHUB_PATH
@@ -186,5 +186,5 @@ jobs:
           nim --version
           nimble --version
           gcc --version
-          nimble install -y --depsOnly
+          # nimble install -y --depsOnly
           ${{ inputs.test-command }}
