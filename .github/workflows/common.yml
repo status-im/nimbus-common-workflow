@@ -169,6 +169,7 @@ jobs:
         with:
           path: |
             nim/bin
+            nim/config
             nim/lib
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ runner.os }}-${{ matrix.target.cpu }}
 
@@ -191,6 +192,7 @@ jobs:
         with:
           path: |
             nim/bin
+            nim/config
             nim/lib
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ runner.os }}-${{ matrix.target.cpu }}
 
