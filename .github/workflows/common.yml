@@ -167,7 +167,7 @@ jobs:
         id: nim-cache
         uses: actions/cache@v4
         with:
-          path: nim
+          path: nim/bin
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ runner.os }}-${{ matrix.target.cpu }}
 
       - name: Build Nim and Nimble
@@ -181,13 +181,13 @@ jobs:
           CC: gcc
         run: |
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-          bash build_nim.sh nim csources dist/nimble NimBinaries
+          bash build_nim.sh nim csources dist/nimble nim/bin
 
       - name: Save Nim build to cache
         if: steps.nim-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
-          path: nim
+          path: nim/bin
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ runner.os }}-${{ matrix.target.cpu }}
 
       - name: Add Nim bin to GITHUB_PATH
