@@ -155,7 +155,27 @@ jobs:
 
 
 
+      - name: Get Nim commit hash
+        id: nim-hash
+        run: |
+          BRANCH="${{ matrix.branch }}"
+          HASH=$(curl -s "https://api.github.com/repos/nim-lang/Nim/branches/${{ matrix.branch }}" | jq -r .commit.sha)
+          echo "NIM_COMMIT_HASH=$HASH" >> $GITHUB_ENV
+          echo "nim_commit_hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Restore Nim build from cache
+        id: nim-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            nim/bin
+            nim/config
+            nim/lib
+            nim/nim.nimble
+          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
+
       - name: Build Nim and Nimble
+        if: steps.nim-cache.outputs.cache-hit != 'true'
         env:
           MAKE: make -j4
           ARCH_OVERRIDE: ${{ matrix.target.platform }}
@@ -166,7 +186,20 @@ jobs:
         run: |
           curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
           bash build_nim.sh nim csources dist/nimble NimBinaries
-          echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+
+      - name: Save Nim build to cache
+        if: steps.nim-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            nim/bin
+            nim/config
+            nim/lib
+            nim/nim.nimble
+          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
+
+      - name: Add Nim bin to GITHUB_PATH
+        run: echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Add .nimble/bin path to GITHUB_PATH
         if: ${{ inputs.nimble-bin-path }}
@@ -178,6 +211,8 @@ jobs:
           else
             echo '~/.nimble/bin' >> $GITHUB_PATH
           fi
+
+
 
       - name: Run tests
         env:
