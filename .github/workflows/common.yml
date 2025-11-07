@@ -171,6 +171,7 @@ jobs:
             nim/bin
             nim/config
             nim/lib
+            nim/nim.nimble
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
 
       - name: Build Nim and Nimble
@@ -194,6 +195,7 @@ jobs:
             nim/bin
             nim/config
             nim/lib
+            nim/nim.nimble
           key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
 
       - name: Add Nim bin to GITHUB_PATH
