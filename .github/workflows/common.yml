@@ -32,6 +32,7 @@ jobs:
   build:
     env:
       NIMBLE_COMMIT: ${{ inputs.nimble-version }}
+      V: 1
     strategy:
       fail-fast: false
       matrix:
