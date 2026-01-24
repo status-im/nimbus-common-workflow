@@ -4,22 +4,22 @@ on:
   workflow_call:
     inputs:
       test-command:
-        description: "Test command(s) which should be used to test a package"
-        default: "nimble test"
+        description: 'Test command(s) which should be used to test a package'
+        default: 'nimble test'
         required: false
         type: string
       nim-versions:
-        description: "List of Nim versions which should be used for testing"
+        description: 'List of Nim versions which should be used for testing'
         default: '["version-1-6", "version-2-0", "version-2-2", "devel"]'
         required: false
         type: string
       nimble-version:
-        description: "NIMBLE_COMMIT to use when compiling nimble, defaults to the one shipped with nim"
-        default: ""
+        description: 'NIMBLE_COMMIT to use when compiling nimble, defaults to the one shipped with nim'
+        default: ''
         required: false
         type: string
       nimble-bin-path:
-        description: "Add .nimble/bin path to GITHUB_PATH"
+        description: 'Add .nimble/bin path to GITHUB_PATH'
         required: false
         default: false
         type: boolean
@@ -70,7 +70,8 @@ jobs:
       run:
         shell: bash
 
-    name: "${{ matrix.target.os }}-${{ matrix.target.cpu }} (Nim ${{ matrix.branch }})"
+
+    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }} (Nim ${{ matrix.branch }})'
     runs-on: ${{ matrix.target.builder }}
     continue-on-error: ${{ matrix.branch == 'devel' }}
 
@@ -108,13 +109,15 @@ jobs:
           # Set GCC-14 as the default
           sudo update-alternatives --set gcc /usr/bin/gcc-14
 
+
+
       - name: Restore llvm-mingw (Windows) from cache
         if: runner.os == 'Windows'
         id: windows-mingw-cache
         uses: actions/cache@v4
         with:
           path: external/mingw-${{ matrix.target.cpu }}
-          key: "mingw-llvm-17-${{ matrix.target.cpu }}"
+          key: 'mingw-llvm-17-${{ matrix.target.cpu }}'
 
       - name: Install llvm-mingw dependency (Windows)
         if: >
@@ -138,7 +141,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: external/dlls-${{ matrix.target.cpu }}
-          key: "dlls-${{ matrix.target.cpu }}"
+          key: 'dlls-${{ matrix.target.cpu }}'
 
       - name: Install DLLs dependencies (Windows)
         if: >
@@ -154,6 +157,8 @@ jobs:
         run: |
           echo "${{ github.workspace }}/external/mingw-${{ matrix.target.cpu }}/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/external/dlls-${{ matrix.target.cpu }}" >> $GITHUB_PATH
+
+
 
       - name: Get Nim commit hash
         id: nim-hash
@@ -211,6 +216,8 @@ jobs:
           else
             echo '~/.nimble/bin' >> $GITHUB_PATH
           fi
+
+
 
       - name: Run tests
         env:
