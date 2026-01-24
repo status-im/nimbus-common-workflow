@@ -70,10 +70,10 @@ jobs:
       run:
         shell: bash
 
-
     name: '${{ matrix.target.os }}-${{ matrix.target.cpu }} (Nim ${{ matrix.branch }})'
     runs-on: ${{ matrix.target.builder }}
     continue-on-error: ${{ matrix.branch == 'devel' }}
+
 
     steps:
       - name: Checkout
