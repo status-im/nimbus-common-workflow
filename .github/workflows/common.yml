@@ -25,7 +25,7 @@ on:
         type: boolean
 
     secrets:
-      - EXTERNAL_SERVICE_TOKEN:
+      EXTERNAL_SERVICE_TOKEN:
         required: false
         description: "Optional auth token for external services, e.g. Bencher, Codecov, etc."
 
