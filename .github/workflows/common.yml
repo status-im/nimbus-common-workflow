@@ -24,6 +24,11 @@ on:
         default: false
         type: boolean
 
+    secrets:
+      - EXTERNAL_SERVICE_TOKEN:
+        required: false
+        description: "Optional auth token for external services, e.g. Bencher, Codecov, etc."
+
 concurrency: # Cancel stale PR builds (but not push builds)
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
@@ -68,11 +73,6 @@ jobs:
     name: "${{ matrix.target.os }}-${{ matrix.target.cpu }} (Nim ${{ matrix.branch }})"
     runs-on: ${{ matrix.target.builder }}
     continue-on-error: ${{ matrix.branch == 'devel' }}
-
-    secrets:
-      - EXTERNAL_SERVICE_TOKEN:
-        required: false
-        description: "Optional auth token for external services, e.g. Bencher, Codecov, etc."
 
     steps:
       - name: Checkout
