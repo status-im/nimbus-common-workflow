@@ -217,7 +217,7 @@ jobs:
       - name: Run tests
         env:
           PLATFORM: ${{ matrix.target.platform }}
-          OS: ${{ matrix.target.os }}
+          MATRIX_OS: ${{ matrix.target.os }}
           CPU: ${{ matrix.target.cpu }}
           NIM_VERSION: ${{ matrix.branch }}
         run: |
