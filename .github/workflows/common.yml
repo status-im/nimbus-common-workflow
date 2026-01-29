@@ -15,7 +15,7 @@ on:
         type: string
       nimble-version:
         description: 'NIMBLE_COMMIT to use when compiling nimble, defaults to the one shipped with nim'
-        default: ''
+        default: '9207e8b2bbdf66b5a4d1020214cff44d2d30df92' # v0.20.1
         required: false
         type: string
       nimble-bin-path:
@@ -177,7 +177,7 @@ jobs:
             nim/config
             nim/lib
             nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
+          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
 
       - name: Build Nim and Nimble
         if: steps.nim-cache.outputs.cache-hit != 'true'
@@ -201,7 +201,7 @@ jobs:
             nim/config
             nim/lib
             nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}
+          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
 
       - name: Add Nim bin to GITHUB_PATH
         run: echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
