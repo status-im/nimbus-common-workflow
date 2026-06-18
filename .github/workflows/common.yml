@@ -237,5 +237,5 @@ jobs:
           nim --version
           nimble --version
           gcc --version
-          nimble install -y --depsOnly
+          nimble --useSystemNim install -y --depsOnly
           ${{ inputs.test-command }}
