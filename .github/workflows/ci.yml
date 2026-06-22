@@ -3,10 +3,40 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-  
+
 jobs:
   build:
     uses: ./.github/workflows/common.yml
     with:
       test-command: |
         nim c -r -d:release tests/tests
+        
+        echo ""
+        echo "Test if env vars readable by caller"
+        echo "Platform: $PLATFORM"
+        echo "OS: $MATRIX_OS"
+        echo "CPU: $CPU"
+        echo "Nim version: $NIM_VERSION"
+
+        pattern='(x86|x64|arm64)'
+        if ! [[ "$PLATFORM" =~ $pattern ]]; then
+          echo "unsupported platform: $PLATFORM"
+          exit 1
+        fi
+
+        pattern='(linux*|windows|macos)'
+        if ! [[ "$MATRIX_OS" =~ $pattern ]]; then
+          echo "unsupported os: $MATRIX_OS"
+          exit 1
+        fi
+
+        pattern='(amd64|i386|arm64)'
+        if ! [[ "$CPU" =~ $pattern ]]; then
+          echo "unsupported cpu: $CPU"
+          exit 1
+        fi
+
+        if [[ -z "$NIM_VERSION" ]]; then
+          echo "blank nim branch: $NIM_VERSION"
+          exit 1
+        fi
