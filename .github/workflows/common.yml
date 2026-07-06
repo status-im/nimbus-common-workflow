@@ -64,7 +64,7 @@ jobs:
           - os: macos
             cpu: arm64
             platform: arm64
-            builder: macos-latest
+            builder: macos-15
         branch: ${{ fromJson(inputs.nim-versions) }}
     defaults:
       run:
