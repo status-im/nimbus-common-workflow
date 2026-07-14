@@ -100,6 +100,7 @@ By default, this workflow tests a package with the following Nim versions:
 - `version-1-6`
 - `version-2-0`
 - `version-2-2`
+- `version-2-4`
 - `devel`
 
 To test with a different set of Nim versions, specify them in
