@@ -14,10 +14,25 @@ For docs, there is `docs.yml` that sets up mdBook and Nim, builds and publishes
 the docs to GitHub Pages.
 
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Common CI workflows](#common-ci-workflows)
+  - [`common.yml` usage](#commonyml-usage)
+    - [The test command](#the-test-command)
+    - [Nim version](#nim-version)
+    - [Nimble version](#nimble-version)
+  - [`docs.yml` usage](#docsyml-usage)
+    - [The docs command](#the-docs-command)
+    - [mdBook version and preprocessors](#mdbook-version-and-preprocessors)
+    - [Nim version](#nim-version-1)
+    - [Branch and directory to publish](#branch-and-directory-to-publish)
+
+<!-- markdown-toc end -->
 
 
 
-## `common.yml` Usage
+## `common.yml` usage
 
 To use this workflow, in the project's `.github/workflows/<name>.yml`you need
 to refer to it inside of `jobs.<name>.uses` field.\
@@ -43,7 +58,7 @@ By default, it is assumed that your project uses `nimble test` for its testing.
 
 
 
-### Customizing the test command
+### The test command
 
 In a case where you don't just run `nimble test`, or when you need some additional
 commands (e.g. installing additional libraries) before running the tests,
@@ -94,10 +109,9 @@ jobs:
 
 
 
-### Customizing the Nim versions used in testing
+### Nim version
 
 By default, this workflow tests a package with the following Nim versions:
-- `version-1-6`
 - `version-2-0`
 - `version-2-2`
 - `version-2-4`
@@ -126,8 +140,43 @@ jobs:
 
 
 
+### Nimble version
 
-## `docs.yml` Usage
+If you need to override the default Nimble version, you can do it by specifying
+it with `jobs.<name>.with.nimble-version`:
+
+```yaml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
+    with:
+      nimble-version: 'a399f502dec7ffcd905c1cf54b13274ad990bada'
+```
+
+You can find Nimble releases [here](https://github.com/nim-lang/nimble/releases).
+
+
+
+
+
+&nbsp;
+
+<br>
+
+&nbsp;
+
+
+
+
+## `docs.yml` usage
 
 Similarly to `common.yml`, to use this workflow,
 refer to it in your project's `.github/workflows/<name>.yml`:
@@ -152,7 +201,7 @@ By default, it is assumed that your project uses `nimble docs` to generate the d
 
 
 
-### Customizing the docs command
+### The docs command
 
 You can customize the command used to produce the docs
 by defining `docs-command` value:
@@ -178,8 +227,7 @@ jobs:
 
 
 
-
-### Customizing mdBook version and preprocessors
+### mdBook version and preprocessors
 
 By default, this workflow uses the latest mdBook and no preprocessors
 to build the docs.
@@ -234,7 +282,7 @@ You can list the preprocessors with specific versions or without them
 
 
 
-### Customizing the Nim version
+### Nim version
 
 By default, the latest stable Nim version is installed.
 
@@ -263,7 +311,7 @@ This can be handy if you run Nim code during documentation build
 
 
 
-### Customizing the branch and directory to publish
+### Branch and directory to publish
 
 By default, this workflow will publish the docs from `./docs` directory
 to `gh-pages` branch.
