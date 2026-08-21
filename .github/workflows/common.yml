@@ -8,6 +8,11 @@ on:
         default: 'nimble test'
         required: false
         type: string
+      install-command:
+        description: 'A (Nimble) command which should be used for installing a package'
+        default: 'nimble --useSystemNim install -y --depsOnly'
+        required: false
+        type: string
       nim-versions:
         description: 'List of Nim versions which should be used for testing'
         default: '["version-2-0", "version-2-2", "version-2-4", "devel"]'
@@ -237,5 +242,5 @@ jobs:
           nim --version
           nimble --version
           gcc --version
-          nimble --useSystemNim install -y --depsOnly
+          ${{ inputs.install-command }}
           ${{ inputs.test-command }}
