@@ -20,6 +20,7 @@ the docs to GitHub Pages.
 - [Common CI workflows](#common-ci-workflows)
   - [`common.yml` usage](#commonyml-usage)
     - [The test command](#the-test-command)
+    - [The install command](#the-install-command)
     - [Nim version](#nim-version)
     - [Nimble version](#nimble-version)
   - [`docs.yml` usage](#docsyml-usage)
@@ -104,6 +105,37 @@ jobs:
           nimble test_libbacktrace
           nimble examples
 ```
+
+
+
+
+
+### The install command
+
+In case where the default install command 
+(`nimble --useSystemNim install -y --depsOnly`) isn't sufficient for your
+needs, e.g. if you want to run `nimble --resolver:minver install` or some
+other flag or command, you can specify the `jobs.<name>.with.install-command`:
+
+
+```yaml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
+    with:
+      install-command: 'nimble --resolver:minver install -y --depsOnly'
+```
+
+
+
 
 
 
