@@ -15,7 +15,8 @@ on:
         type: string
       nim-versions:
         description: 'List of Nim versions which should be used for testing'
-        default: '["version-2-0", "version-2-2", "version-2-4", "devel"]'
+        # default: '["version-2-0", "version-2-2", "version-2-4", "devel"]'
+        default: '["2.0.x", "2.2.x", "2.4.x", "devel"]'
         required: false
         type: string
       nimble-version:
@@ -86,139 +87,144 @@ jobs:
         with:
           submodules: true
 
-      - name: Install build dependencies (Linux i386)
-        if: runner.os == 'Linux' && matrix.target.cpu == 'i386'
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
-            --no-install-recommends -yq gcc-multilib g++-multilib libssl-dev:i386
-          mkdir -p external/bin
-          cat << EOF > external/bin/gcc
-          #!/bin/bash
-          exec $(which gcc) -m32 -mno-adx "\$@"
-          EOF
-          cat << EOF > external/bin/g++
-          #!/bin/bash
-          exec $(which g++) -m32 -mno-adx "\$@"
-          EOF
-          chmod 755 external/bin/gcc external/bin/g++
-          echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
-
-
-
-      - name: Restore llvm-mingw (Windows) from cache
-        if: runner.os == 'Windows'
-        id: windows-mingw-cache
-        uses: actions/cache@v6
+      - name: Setup Nim
+        uses: jiro4989/setup-nim-action@v2
         with:
-          path: external/mingw-${{ matrix.target.cpu }}
-          key: 'mingw-llvm-20-${{ matrix.target.cpu }}'
+          nim-version: ${{ matrix.branch }}
 
-      - name: Install llvm-mingw dependency (Windows)
-        if: >
-          steps.windows-mingw-cache.outputs.cache-hit != 'true' &&
-          runner.os == 'Windows'
-        run: |
-          mkdir -p external
-          MINGW_BASE="https://github.com/mstorsjo/llvm-mingw/releases/download/20250709"
-          if [[ '${{ matrix.target.cpu }}' == 'amd64' ]]; then
-            MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-x86_64.zip"
-          else
-            MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-i686.zip"
-          fi
-          curl -L "$MINGW_URL" -o "external/mingw-${{ matrix.target.cpu }}.zip"
-          7z x -y "external/mingw-${{ matrix.target.cpu }}.zip" -oexternal/mingw-${{ matrix.target.cpu }}/
-          mv external/mingw-${{ matrix.target.cpu }}/**/* ./external/mingw-${{ matrix.target.cpu }}
-
-      - name: Restore Nim DLLs dependencies (Windows) from cache
-        if: runner.os == 'Windows'
-        id: windows-dlls-cache
-        uses: actions/cache@v6
-        with:
-          path: external/dlls-${{ matrix.target.cpu }}
-          key: 'dlls-${{ matrix.target.cpu }}'
-
-      - name: Install DLLs dependencies (Windows)
-        if: >
-          runner.os == 'Windows' &&
-          steps.windows-dlls-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p external
-          curl -L "https://nim-lang.org/download/windeps.zip" -o external/windeps.zip
-          7z x -y external/windeps.zip -oexternal/dlls-${{ matrix.target.cpu }}
-
-      - name: Path to cached dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "${{ github.workspace }}/external/mingw-${{ matrix.target.cpu }}/bin" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/external/dlls-${{ matrix.target.cpu }}" >> $GITHUB_PATH
+      # - name: Install build dependencies (Linux i386)
+      #   if: runner.os == 'Linux' && matrix.target.cpu == 'i386'
+      #   run: |
+      #     sudo dpkg --add-architecture i386
+      #     sudo apt-get update -qq
+      #     sudo DEBIAN_FRONTEND='noninteractive' apt-get install \
+      #       --no-install-recommends -yq gcc-multilib g++-multilib libssl-dev:i386
+      #     mkdir -p external/bin
+      #     cat << EOF > external/bin/gcc
+      #     #!/bin/bash
+      #     exec $(which gcc) -m32 -mno-adx "\$@"
+      #     EOF
+      #     cat << EOF > external/bin/g++
+      #     #!/bin/bash
+      #     exec $(which g++) -m32 -mno-adx "\$@"
+      #     EOF
+      #     chmod 755 external/bin/gcc external/bin/g++
+      #     echo '${{ github.workspace }}/external/bin' >> $GITHUB_PATH
 
 
 
-      - name: Get Nim commit hash
-        id: nim-hash
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const branch = "${{ matrix.branch }}";
-            const res = await github.rest.repos.getBranch({
-              owner: "nim-lang",
-              repo: "Nim",
-              branch: branch,
-            });
-            const sha = res.data.commit.sha;
-            core.setOutput("nim_commit_hash", sha);
-            core.exportVariable("NIM_COMMIT_HASH", sha);
+      # - name: Restore llvm-mingw (Windows) from cache
+      #   if: runner.os == 'Windows'
+      #   id: windows-mingw-cache
+      #   uses: actions/cache@v6
+      #   with:
+      #     path: external/mingw-${{ matrix.target.cpu }}
+      #     key: 'mingw-llvm-20-${{ matrix.target.cpu }}'
 
-      - name: Restore Nim build from cache
-        id: nim-cache
-        uses: actions/cache@v6
-        with:
-          path: |
-            nim/bin
-            nim/config
-            nim/lib
-            nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+      # - name: Install llvm-mingw dependency (Windows)
+      #   if: >
+      #     steps.windows-mingw-cache.outputs.cache-hit != 'true' &&
+      #     runner.os == 'Windows'
+      #   run: |
+      #     mkdir -p external
+      #     MINGW_BASE="https://github.com/mstorsjo/llvm-mingw/releases/download/20250709"
+      #     if [[ '${{ matrix.target.cpu }}' == 'amd64' ]]; then
+      #       MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-x86_64.zip"
+      #     else
+      #       MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-i686.zip"
+      #     fi
+      #     curl -L "$MINGW_URL" -o "external/mingw-${{ matrix.target.cpu }}.zip"
+      #     7z x -y "external/mingw-${{ matrix.target.cpu }}.zip" -oexternal/mingw-${{ matrix.target.cpu }}/
+      #     mv external/mingw-${{ matrix.target.cpu }}/**/* ./external/mingw-${{ matrix.target.cpu }}
 
-      - name: Build Nim and Nimble
-        if: steps.nim-cache.outputs.cache-hit != 'true'
-        env:
-          MAKE: make -j4
-          ARCH_OVERRIDE: ${{ matrix.target.platform }}
-          NIM_COMMIT: ${{ matrix.branch }}
-          QUICK_AND_DIRTY_COMPILER: 1
-          QUICK_AND_DIRTY_NIMBLE: 1
-          CC: gcc
-        run: |
-          curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
-          bash build_nim.sh nim csources dist/nimble NimBinaries
+      # - name: Restore Nim DLLs dependencies (Windows) from cache
+      #   if: runner.os == 'Windows'
+      #   id: windows-dlls-cache
+      #   uses: actions/cache@v6
+      #   with:
+      #     path: external/dlls-${{ matrix.target.cpu }}
+      #     key: 'dlls-${{ matrix.target.cpu }}'
 
-      - name: Save Nim build to cache
-        if: steps.nim-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v6
-        with:
-          path: |
-            nim/bin
-            nim/config
-            nim/lib
-            nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+      # - name: Install DLLs dependencies (Windows)
+      #   if: >
+      #     runner.os == 'Windows' &&
+      #     steps.windows-dlls-cache.outputs.cache-hit != 'true'
+      #   run: |
+      #     mkdir -p external
+      #     curl -L "https://nim-lang.org/download/windeps.zip" -o external/windeps.zip
+      #     7z x -y external/windeps.zip -oexternal/dlls-${{ matrix.target.cpu }}
 
-      - name: Add Nim bin to GITHUB_PATH
-        run: echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+      # - name: Path to cached dependencies (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     echo "${{ github.workspace }}/external/mingw-${{ matrix.target.cpu }}/bin" >> $GITHUB_PATH
+      #     echo "${{ github.workspace }}/external/dlls-${{ matrix.target.cpu }}" >> $GITHUB_PATH
 
-      - name: Add .nimble/bin path to GITHUB_PATH
-        if: ${{ inputs.nimble-bin-path }}
-        run: |
-          if [[ '${{ runner.os }}' == 'Linux' ]]; then
-            echo '/home/runner/.nimble/bin' >> $GITHUB_PATH
-          elif [[ '${{ runner.os }}' == 'Windows' ]]; then
-            echo 'C:/Users/runneradmin/.nimble/bin' >> $GITHUB_PATH
-          else
-            echo '~/.nimble/bin' >> $GITHUB_PATH
-          fi
+
+
+      # - name: Get Nim commit hash
+      #   id: nim-hash
+      #   uses: actions/github-script@v9
+      #   with:
+      #     script: |
+      #       const branch = "${{ matrix.branch }}";
+      #       const res = await github.rest.repos.getBranch({
+      #         owner: "nim-lang",
+      #         repo: "Nim",
+      #         branch: branch,
+      #       });
+      #       const sha = res.data.commit.sha;
+      #       core.setOutput("nim_commit_hash", sha);
+      #       core.exportVariable("NIM_COMMIT_HASH", sha);
+
+      # - name: Restore Nim build from cache
+      #   id: nim-cache
+      #   uses: actions/cache@v6
+      #   with:
+      #     path: |
+      #       nim/bin
+      #       nim/config
+      #       nim/lib
+      #       nim/nim.nimble
+      #     key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+
+      # - name: Build Nim and Nimble
+      #   if: steps.nim-cache.outputs.cache-hit != 'true'
+      #   env:
+      #     MAKE: make -j4
+      #     ARCH_OVERRIDE: ${{ matrix.target.platform }}
+      #     NIM_COMMIT: ${{ matrix.branch }}
+      #     QUICK_AND_DIRTY_COMPILER: 1
+      #     QUICK_AND_DIRTY_NIMBLE: 1
+      #     CC: gcc
+      #   run: |
+      #     curl -O -L -s -S https://raw.githubusercontent.com/status-im/nimbus-build-system/master/scripts/build_nim.sh
+      #     bash build_nim.sh nim csources dist/nimble NimBinaries
+
+      # - name: Save Nim build to cache
+      #   if: steps.nim-cache.outputs.cache-hit != 'true'
+      #   uses: actions/cache@v6
+      #   with:
+      #     path: |
+      #       nim/bin
+      #       nim/config
+      #       nim/lib
+      #       nim/nim.nimble
+      #     key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+
+      # - name: Add Nim bin to GITHUB_PATH
+      #   run: echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
+
+      # - name: Add .nimble/bin path to GITHUB_PATH
+      #   if: ${{ inputs.nimble-bin-path }}
+      #   run: |
+      #     if [[ '${{ runner.os }}' == 'Linux' ]]; then
+      #       echo '/home/runner/.nimble/bin' >> $GITHUB_PATH
+      #     elif [[ '${{ runner.os }}' == 'Windows' ]]; then
+      #       echo 'C:/Users/runneradmin/.nimble/bin' >> $GITHUB_PATH
+      #     else
+      #       echo '~/.nimble/bin' >> $GITHUB_PATH
+      #     fi
 
 
 
