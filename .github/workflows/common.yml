@@ -19,8 +19,8 @@ on:
         required: false
         type: string
       nimble-version:
-        description: 'NIMBLE_COMMIT to use when compiling nimble, defaults to the one shipped with nim'
-        default: 'a399f502dec7ffcd905c1cf54b13274ad990bada' # v0.24.1
+        description: 'NIMBLE_COMMIT to use when compiling nimble'
+        default: '33a6bc8e50a33222fce075143800fe5a715e8bfe' # v0.26.0
         required: false
         type: string
       nimble-bin-path:
