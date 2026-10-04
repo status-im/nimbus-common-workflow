@@ -236,3 +236,12 @@ jobs:
           clang --version
           ${{ inputs.install-command }}
           ${{ inputs.test-command }}
+
+  summary:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build results
+        run: |
+          [[ '${{ needs.build.result }}' == 'success' ]]
