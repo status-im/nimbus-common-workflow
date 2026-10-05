@@ -7,7 +7,7 @@ skipDirs      = @["tests"]
 srcDir        = "tests"
 
 # Dependencies
-requires "nim >= 1.6.0"
+requires "nim >= 1.6.16"
 
 # This is a dummy nimble file to let the
 # "nimble install -y --depsOnly" in common.yml
