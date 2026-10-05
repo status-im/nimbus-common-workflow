@@ -178,9 +178,11 @@ jobs:
           path: |
             nim/bin
             nim/config
+            nim/doc
             nim/lib
             nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+            nim/tools
+          key: nim-v3-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
 
       - name: Build Nim and Nimble
         if: steps.nim-cache.outputs.cache-hit != 'true'
