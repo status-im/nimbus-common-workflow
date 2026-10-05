@@ -15,7 +15,7 @@ on:
         type: string
       nim-versions:
         description: 'List of Nim versions which should be used for testing'
-        default: '["version-2-0", "version-2-2", "version-2-4", "devel"]'
+        default: '["", "version-*", "devel"]'
         required: false
         type: string
       nimble-version:
@@ -28,6 +28,11 @@ on:
         required: false
         default: false
         type: boolean
+      concurrency-suffix:
+        description: 'Suffix for the concurrency group, needed when calling this workflow multiple times from the same workflow'
+        default: ''
+        required: false
+        type: string
 
     secrets:
       EXTERNAL_SERVICE_TOKEN:
@@ -35,11 +40,63 @@ on:
         description: "Optional auth token for external services, e.g. Bencher, Codecov, etc."
 
 concurrency: # Cancel stale PR builds (but not push builds)
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}${{ inputs.concurrency-suffix && format('-{0}', inputs.concurrency-suffix) }}
   cancel-in-progress: true
 
 jobs:
+  nim-versions:
+    name: Nim versions
+    runs-on: ubuntu-latest
+    outputs:
+      nim-versions: ${{ steps.nim-versions.outputs.nim-versions }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Determine minimum Nim version
+        id: min-nim
+        if: contains(fromJson(inputs.nim-versions), '') || contains(fromJson(inputs.nim-versions), 'version-*')
+        timeout-minutes: 10
+        run: |
+          stable=$(curl -fsSL https://nim-lang.org/channels/stable)
+          curl -fsSL "https://nim-lang.org/download/nim-${stable}-linux_x64.tar.xz" | tar -xJ -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/nim-${stable}/bin/nimble" --resolver:minver --lockFile:minver.lock -y lock
+          version=$(jq -r '.packages.nim.version // empty' minver.lock)
+          echo "Minimum Nim version: ${version:-$stable}"
+          echo "version=${version:-$stable}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine Nim release branches
+        id: branches
+        if: contains(fromJson(inputs.nim-versions), 'version-*')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MIN_NIM: ${{ steps.min-nim.outputs.version }}
+        run: |
+          branches=$(gh api repos/nim-lang/Nim/git/matching-refs/heads/version- | jq -c --arg min "$MIN_NIM" '
+            def ver: [scan("[0-9]+") | tonumber];
+            [.[].ref | ltrimstr("refs/heads/") | select(test("^version-[0-9]+-[0-9]+$"))]
+            | map(select(ver >= ($min | ver)[:2])) | sort_by(ver)')
+          echo "Nim release branches: $branches"
+          echo "branches=$branches" >> "$GITHUB_OUTPUT"
+
+      - name: Expand Nim versions
+        id: nim-versions
+        env:
+          NIM_VERSIONS: ${{ inputs.nim-versions }}
+          MIN_NIM: ${{ steps.min-nim.outputs.version }}
+          BRANCHES: ${{ steps.branches.outputs.branches || '[]' }}
+        run: |
+          nim_versions=$(jq -c --arg min "v$MIN_NIM" --argjson branches "$BRANCHES" \
+            'map(if . == "" then $min elif . == "version-*" then $branches[] else . end)' <<< "$NIM_VERSIONS")
+          echo "Nim versions: $nim_versions"
+          echo "nim-versions=$nim_versions" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: nim-versions
     env:
       NIMBLE_COMMIT: ${{ inputs.nimble-version }}
     strategy:
@@ -70,7 +127,7 @@ jobs:
             cpu: arm64
             platform: arm64
             builder: macos-latest
-        branch: ${{ fromJson(inputs.nim-versions) }}
+        branch: ${{ fromJson(needs.nim-versions.outputs.nim-versions) }}
     defaults:
       run:
         shell: bash
@@ -162,12 +219,12 @@ jobs:
         with:
           script: |
             const branch = "${{ matrix.branch }}";
-            const res = await github.rest.repos.getBranch({
+            const res = await github.rest.repos.getCommit({
               owner: "nim-lang",
               repo: "Nim",
-              branch: branch,
+              ref: branch,
             });
-            const sha = res.data.commit.sha;
+            const sha = res.data.sha;
             core.setOutput("nim_commit_hash", sha);
             core.exportVariable("NIM_COMMIT_HASH", sha);
 

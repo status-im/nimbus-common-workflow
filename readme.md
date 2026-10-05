@@ -5,7 +5,8 @@ This goal of this repo is to define standardized GitHub Actions workflows
 to be used in Status projects for common tasks like testing and documentation generation.
 
 For testing, there is `common.yml` that provides commonly required steps:
-- setting up the build matrix (different OSes, different Nim versions)
+- setting up the build matrix (different OSes, different Nim versions
+  including the minimum one required by the package)
 - installing the build dependencies
 - building Nim and Nimble
 - running the tests
@@ -112,7 +113,7 @@ jobs:
 
 ### The install command
 
-In case where the default install command 
+In case where the default install command
 (`nimble --useSystemNim install -y --depsOnly`) isn't sufficient for your
 needs, e.g. if you want to run `nimble --resolver:minver install` or some
 other flag or command, you can specify the `jobs.<name>.with.install-command`:
@@ -144,12 +145,17 @@ jobs:
 ### Nim version
 
 By default, this workflow tests a package with the following Nim versions:
-- `version-2-0`
-- `version-2-2`
-- `version-2-4`
-- `devel`
+- the minimum Nim version required by the package, e.g., `v2.2.12`
+  for `requires "nim >= 2.2.12"`
+- all Nim release branches since then, e.g.,  `version-2-2` and `version-2-4`
+- `devel` (failures are allowed)
 
-To test with a different set of Nim versions, specify them in
+The minimum Nim version is derived from the package's `.nimble` file
+by resolving its dependencies to the lowest versions satisfying
+their requirements (`nimble --resolver:minver lock`), and taking the lowest
+Nim version that satisfies the package and all of these dependencies.
+
+To test with a different set of Nim versions (branches or tags), specify them in
 `jobs.<name>.with.nim-versions` using the following syntax (make sure to include
 both outer single quotes and inner double quotes as in the example):
 
@@ -166,8 +172,14 @@ jobs:
   build:
     uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
     with:
-      nim-versions: '["version-2-0", "version-2-2"]'
+      nim-versions: '["version-2-2", "devel"]'
 ```
+
+The list can contain the following placeholders:
+- `""`: the minimum Nim version required by the package
+- `"version-*"`: all Nim release branches since the minimum Nim version
+
+The default is `'["", "version-*", "devel"]'`
 
 
 
