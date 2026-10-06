@@ -106,11 +106,7 @@ jobs:
           - os: linux
             cpu: amd64
             platform: x64
-            builder: ubuntu-latest
-          - os: linux-gcc-14 # This is to use gcc >= 14 and clang >= 20. Should be removed when ubuntu-latest is 26.04
-            cpu: amd64
-            platform: x64
-            builder: ubuntu-26.04
+            builder: ubuntu-26.04  # We need GCC >= 14 and Clang >= 20. Replace this with 'ubuntu-latest' once it is 26.04 (19 Oct 2026)
           - os: windows
             cpu: amd64
             platform: x64
