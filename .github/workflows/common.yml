@@ -62,12 +62,17 @@ jobs:
         if: contains(fromJson(inputs.nim-versions), '') || contains(fromJson(inputs.nim-versions), 'version-*')
         timeout-minutes: 10
         run: |
-          stable=$(curl -fsSL https://nim-lang.org/channels/stable)
-          curl -fsSL "https://nim-lang.org/download/nim-${stable}-linux_x64.tar.xz" | tar -xJ -C "$RUNNER_TEMP"
-          "$RUNNER_TEMP/nim-${stable}/bin/nimble" --resolver:minver --lockFile:minver.lock -y lock
-          version=$(jq -r '.packages.nim.version // empty' minver.lock)
-          echo "Minimum Nim version: ${version:-$stable}"
-          echo "version=${version:-$stable}" >> "$GITHUB_OUTPUT"
+          if compgen -G '*.nimble' > /dev/null; then
+            stable=$(curl -fsSL https://nim-lang.org/channels/stable)
+            curl -fsSL "https://nim-lang.org/download/nim-${stable}-linux_x64.tar.xz" | tar -xJ -C "$RUNNER_TEMP"
+            "$RUNNER_TEMP/nim-${stable}/bin/nimble" --resolver:minver --lockFile:minver.lock -y lock
+            version=$(jq -r '.packages.nim.version // empty' minver.lock)
+            version=${version:-$stable}
+          else
+            version=1.6.16  # Lowest version that can be built with build_nim.sh
+          fi
+          echo "Minimum Nim version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Determine Nim release branches
         id: branches
