@@ -1,0 +1,99 @@
+name: Update llvm-mingw
+on:
+  schedule:
+    - cron: '0 5 1 * *'
+  workflow_dispatch:
+
+env:
+  BRANCH: dev/github-actions/update-llvm-mingw
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment: update-llvm-mingw
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Get latest llvm-mingw release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release=$(gh release view -R mstorsjo/llvm-mingw --json tagName,name,url)
+          version=$(jq -r '.tagName' <<< "$release")
+          llvm=$(jq -r '.name | capture("LLVM (?<v>[0-9]+\\.[0-9]+\\.[0-9]+)").v' <<< "$release")
+          url=$(jq -r '.url' <<< "$release")
+          if ! [[ "$version" =~ ^[0-9]{8}$ && "$llvm" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected format: $release"
+            exit 1
+          fi
+          echo "Latest llvm-mingw: $version (LLVM $llvm)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "llvm=$llvm" >> "$GITHUB_OUTPUT"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # GITHUB_TOKEN can't push to .github/workflows and doesn't trigger actions:
+          # https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Update
+        id: update
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+          LLVM: ${{ steps.latest.outputs.llvm }}
+        run: |
+          sed -i -E "s/^( *LLVM_MINGW_VERSION: ).*/\1'$VERSION'  # LLVM $LLVM/" .github/workflows/common.yml
+          if ! git diff --exit-code; then
+            echo "changes=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "changes=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push branch
+        id: push
+        if: steps.update.outputs.changes == 1
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+          LLVM: ${{ steps.latest.outputs.llvm }}
+          URL: ${{ steps.latest.outputs.url }}
+        run: |
+          if git fetch --depth=1 origin "$BRANCH" && git diff --quiet FETCH_HEAD -- .github/workflows/common.yml; then
+            echo "Branch already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -am "Bump llvm-mingw to $VERSION (LLVM $LLVM)" -m "- $URL"
+          git push --force origin "$BRANCH"
+          echo "pushed=1" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.push.outputs.pushed == 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.latest.outputs.version }}
+          LLVM: ${{ steps.latest.outputs.llvm }}
+          URL: ${{ steps.latest.outputs.url }}
+        run: |
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$pr" ]]; then
+            gh pr edit "$pr" \
+              --title "Bump llvm-mingw to $VERSION (LLVM $LLVM)" \
+              --body "- $URL"
+          else
+            gh pr create \
+              --title "Bump llvm-mingw to $VERSION (LLVM $LLVM)" \
+              --body "- $URL" \
+              --base "${{ github.event.repository.default_branch }}" \
+              --head "$BRANCH"
+
+            # Force-push with the DEPLOY_KEY to trigger CI
+            git commit --amend --no-edit
+            git push --force origin "$BRANCH"
+          fi
