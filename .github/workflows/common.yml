@@ -104,6 +104,7 @@ jobs:
     needs: nim-versions
     env:
       NIMBLE_COMMIT: ${{ inputs.nimble-version }}
+      LLVM_MINGW_VERSION: '20250709'  # LLVM 20.1.8
     strategy:
       fail-fast: false
       matrix:
@@ -171,7 +172,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: external/mingw-${{ matrix.target.cpu }}
-          key: 'mingw-llvm-20-${{ matrix.target.cpu }}'
+          key: 'llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-${{ matrix.target.cpu }}'
 
       - name: Install llvm-mingw dependency (Windows)
         if: >
@@ -179,11 +180,11 @@ jobs:
           runner.os == 'Windows'
         run: |
           mkdir -p external
-          MINGW_BASE="https://github.com/mstorsjo/llvm-mingw/releases/download/20250709"
+          MINGW_BASE="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION"
           if [[ '${{ matrix.target.cpu }}' == 'amd64' ]]; then
-            MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-x86_64.zip"
+            MINGW_URL="$MINGW_BASE/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-x86_64.zip"
           else
-            MINGW_URL="$MINGW_BASE/llvm-mingw-20250709-ucrt-i686.zip"
+            MINGW_URL="$MINGW_BASE/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-i686.zip"
           fi
           curl -L "$MINGW_URL" -o "external/mingw-${{ matrix.target.cpu }}.zip"
           7z x -y "external/mingw-${{ matrix.target.cpu }}.zip" -oexternal/mingw-${{ matrix.target.cpu }}/
@@ -217,9 +218,11 @@ jobs:
       - name: Get Nim commit hash
         id: nim-hash
         uses: actions/github-script@v9
+        env:
+          BRANCH: ${{ matrix.branch }}
         with:
           script: |
-            const branch = "${{ matrix.branch }}";
+            const branch = process.env.BRANCH;
             const res = await github.rest.repos.getCommit({
               owner: "nim-lang",
               repo: "Nim",
