@@ -147,6 +147,10 @@ jobs:
 
 
     steps:
+      # Temporary dir for self-hosted runners, as Nim caches builds in this
+      - name: Use per-job cache directory
+        run: echo "XDG_CACHE_HOME=$RUNNER_TEMP/cache" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
