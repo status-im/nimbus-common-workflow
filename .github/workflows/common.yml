@@ -13,6 +13,11 @@ on:
         default: 'nimble --useSystemNim install -y --depsOnly'
         required: false
         type: string
+      targets:
+        description: 'List of targets which should be used for testing, each optionally mapped to the runner label(s) to use'
+        default: '["linux-amd64", "linux-arm64", "linux-i386", "macos-arm64", "windows-amd64"]'
+        required: false
+        type: string
       nim-versions:
         description: 'List of Nim versions which should be used for testing'
         default: '["", "version-*", "devel"]'
@@ -48,12 +53,34 @@ jobs:
     name: Nim versions
     runs-on: ubuntu-latest
     outputs:
+      targets: ${{ steps.targets.outputs.targets }}
       nim-versions: ${{ steps.nim-versions.outputs.nim-versions }}
     defaults:
       run:
         shell: bash
 
     steps:
+      - name: Expand targets
+        id: targets
+        env:
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          targets=$(jq -c '
+            {
+              # We need GCC >= 14 and Clang >= 20. Replace this with "ubuntu-latest" once it is 26.04 (19 Nov 2026)
+              "linux-amd64": {os: "linux", cpu: "amd64", platform: "x64", builder: "ubuntu-26.04"},
+              "linux-arm64": {os: "linux", cpu: "arm64", platform: "arm64", builder: "ubuntu-26.04-arm"},
+              "linux-i386": {os: "linux", cpu: "i386", platform: "x86", builder: "ubuntu-latest"},
+              "macos-arm64": {os: "macos", cpu: "arm64", platform: "arm64", builder: "macos-latest"},
+              "windows-amd64": {os: "windows", cpu: "amd64", platform: "x64", builder: "windows-latest"}
+            } as $known
+            | map(if type == "string" then {(.): null} else . end | to_entries[])
+            | if length == 0 then error("No targets") else . end
+            | if (map(.key) | unique | length) != length then error("Duplicate targets") else . end
+            | map(($known[.key] // error("Unknown target: \(.key)")) + if .value then {builder: .value} else {} end)' <<< "$TARGETS")
+          echo "Targets: $targets"
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -108,27 +135,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - os: linux
-            cpu: amd64
-            platform: x64
-            builder: ubuntu-26.04  # We need GCC >= 14 and Clang >= 20. Replace this with 'ubuntu-latest' once it is 26.04 (19 Oct 2026)
-          - os: windows
-            cpu: amd64
-            platform: x64
-            builder: windows-latest
-          - os: linux
-            cpu: i386
-            platform: x86
-            builder: ubuntu-latest
-          - os: linux
-            cpu: arm64
-            platform: arm64
-            builder: ubuntu-26.04-arm
-          - os: macos
-            cpu: arm64
-            platform: arm64
-            builder: macos-latest
+        target: ${{ fromJson(needs.nim-versions.outputs.targets) }}
         branch: ${{ fromJson(needs.nim-versions.outputs.nim-versions) }}
     defaults:
       run:
@@ -234,16 +241,16 @@ jobs:
 
       - name: Restore Nim build from cache
         id: nim-cache
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
-          path: |
+          path: &nim-cache-paths |
             nim/bin
             nim/config
             nim/doc
             nim/lib
             nim/nim.nimble
             nim/tools
-          key: nim-v3-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+          key: nim-v3-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ join(matrix.target.builder, '-') }}-${{ inputs.nimble-version }}
 
       - name: Build Nim and Nimble
         if: steps.nim-cache.outputs.cache-hit != 'true'
@@ -260,14 +267,10 @@ jobs:
 
       - name: Save Nim build to cache
         if: steps.nim-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v6
+        uses: actions/cache/save@v6
         with:
-          path: |
-            nim/bin
-            nim/config
-            nim/lib
-            nim/nim.nimble
-          key: nim-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ inputs.nimble-version }}
+          path: *nim-cache-paths
+          key: ${{ steps.nim-cache.outputs.cache-primary-key }}
 
       - name: Add Nim bin to GITHUB_PATH
         run: echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
