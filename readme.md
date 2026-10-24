@@ -178,6 +178,7 @@ jobs:
 The list can contain the following placeholders:
 - `""`: the minimum Nim version required by the package
 - `"version-*"`: all Nim release branches since the minimum Nim version
+- `"./<path>"`: the Nim commit pinned by the submodule at `<path>`
 
 The default is `'["", "version-*", "devel"]'`
 
