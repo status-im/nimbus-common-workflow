@@ -22,6 +22,7 @@ the docs to GitHub Pages.
   - [`common.yml` usage](#commonyml-usage)
     - [The test command](#the-test-command)
     - [The install command](#the-install-command)
+    - [Targets](#targets)
     - [Nim version](#nim-version)
     - [Nimble version](#nimble-version)
   - [`docs.yml` usage](#docsyml-usage)
@@ -137,6 +138,58 @@ jobs:
 
 
 
+
+
+
+
+
+### Targets
+
+By default, this workflow tests a package on all supported targets:
+- `linux-amd64`
+- `linux-arm64`
+- `linux-i386`
+- `macos-arm64`
+- `windows-amd64`
+
+To test on a subset of them, specify it in `jobs.<name>.with.targets`
+using the following syntax (make sure to include both outer single quotes
+and inner double quotes as in the example):
+
+```yaml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
+    with:
+      targets: '["linux-amd64", "linux-arm64", "macos-arm64", "windows-amd64"]'
+```
+
+To test a target on a different runner, e.g., a self-hosted one or a specific
+image version, map the target to the runner's label or list of labels:
+
+```yaml
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
+    with:
+      targets: '[{"linux-amd64": ["self-hosted", "ubuntu-22.04"]}, "macos-arm64", {"windows-amd64": "windows-2022"}]'
+```
 
 
 
