@@ -223,12 +223,23 @@ jobs:
         with:
           script: |
             const branch = process.env.BRANCH;
-            const res = await github.rest.repos.getCommit({
-              owner: "nim-lang",
-              repo: "Nim",
-              ref: branch,
-            });
-            const sha = res.data.sha;
+            let sha;
+            if (branch.startsWith("./")) {
+              // Commit pinned by the (possibly nested) submodule at that path
+              const path = require("path");
+              const res = await exec.getExecOutput("git", [
+                "-C", path.dirname(branch),
+                "rev-parse", `HEAD:./${path.basename(branch)}`,
+              ]);
+              sha = res.stdout.trim();
+            } else {
+              const res = await github.rest.repos.getCommit({
+                owner: "nim-lang",
+                repo: "Nim",
+                ref: branch,
+              });
+              sha = res.data.sha;
+            }
             core.setOutput("nim_commit_hash", sha);
             core.exportVariable("NIM_COMMIT_HASH", sha);
 
@@ -250,7 +261,7 @@ jobs:
         env:
           MAKE: make -j4
           ARCH_OVERRIDE: ${{ matrix.target.platform }}
-          NIM_COMMIT: ${{ matrix.branch }}
+          NIM_COMMIT: ${{ steps.nim-hash.outputs.nim_commit_hash }}
           QUICK_AND_DIRTY_COMPILER: 1
           QUICK_AND_DIRTY_NIMBLE: 1
           CC: gcc
