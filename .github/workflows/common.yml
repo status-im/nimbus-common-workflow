@@ -131,7 +131,7 @@ jobs:
     needs: nim-versions
     env:
       NIMBLE_COMMIT: ${{ inputs.nimble-version }}
-      LLVM_MINGW_VERSION: '20250709'  # LLVM 20.1.8
+      LLVM_MINGW_VERSION: '20261020'  # LLVM 23.1.4
     strategy:
       fail-fast: false
       matrix:
