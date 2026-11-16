@@ -262,6 +262,7 @@ jobs:
             nim/bin
             nim/compiler
             nim/config
+            nim/dist
             nim/doc
             nim/lib
             nim/nim.nimble
