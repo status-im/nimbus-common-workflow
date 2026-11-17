@@ -70,7 +70,7 @@ jobs:
               # We need GCC >= 14 and Clang >= 20. Replace this with "ubuntu-latest" once it is 26.04 (19 Nov 2026)
               "linux-amd64": {os: "linux", cpu: "amd64", platform: "x64", builder: "ubuntu-26.04"},
               "linux-arm64": {os: "linux", cpu: "arm64", platform: "arm64", builder: "ubuntu-26.04-arm"},
-              "linux-i386": {os: "linux", cpu: "i386", platform: "x86", builder: "ubuntu-latest"},
+              "linux-i386": {os: "linux", cpu: "i386", platform: "x86", builder: "ubuntu-24.04"},
               "macos-arm64": {os: "macos", cpu: "arm64", platform: "arm64", builder: "macos-latest"},
               "windows-amd64": {os: "windows", cpu: "amd64", platform: "x64", builder: "windows-latest"}
             } as $known
