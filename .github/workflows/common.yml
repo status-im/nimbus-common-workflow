@@ -70,7 +70,7 @@ jobs:
               # We need GCC >= 14 and Clang >= 20. Replace this with "ubuntu-latest" once it is 26.04 (19 Nov 2026)
               "linux-amd64": {os: "linux", cpu: "amd64", platform: "x64", builder: "ubuntu-26.04"},
               "linux-arm64": {os: "linux", cpu: "arm64", platform: "arm64", builder: "ubuntu-26.04-arm"},
-              "linux-i386": {os: "linux", cpu: "i386", platform: "x86", builder: "ubuntu-latest"},
+              "linux-i386": {os: "linux", cpu: "i386", platform: "x86", builder: "ubuntu-24.04"},
               "macos-arm64": {os: "macos", cpu: "arm64", platform: "arm64", builder: "macos-latest"},
               "windows-amd64": {os: "windows", cpu: "amd64", platform: "x64", builder: "windows-latest"}
             } as $known
@@ -260,12 +260,14 @@ jobs:
         with:
           path: &nim-cache-paths |
             nim/bin
+            nim/compiler
             nim/config
+            nim/dist
             nim/doc
             nim/lib
             nim/nim.nimble
             nim/tools
-          key: nim-v3-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ join(matrix.target.builder, '-') }}-${{ inputs.nimble-version }}
+          key: nim-v4-${{ matrix.branch }}-${{ steps.nim-hash.outputs.nim_commit_hash }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ join(matrix.target.builder, '-') }}-${{ inputs.nimble-version }}
 
       - name: Build Nim and Nimble
         if: steps.nim-cache.outputs.cache-hit != 'true'
